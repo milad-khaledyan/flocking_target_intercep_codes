@@ -11,7 +11,7 @@ T = 0:.033:80;
 opts = odeset('RelTol',1e-6,'AbsTol',1e-6);
 [t,v_hat] = ode45(@VD_GENE, T, zeros(10,1), opts);
 
-rb = RobotariumBuilder();
+% rb = RobotariumBuilder();
 
 % Get the number of available agents from the Robotarium.  We don't need a
 % specific value for this algorithm
@@ -19,8 +19,8 @@ N = 5;%rb.get_available_agents();
 
 % Set the number of agents and whether we would like to save data.  Then,
 % build the Robotarium simulator object!
-r = rb.set_number_of_agents(N).set_save_data(false).build();%r = rb.set_number_of_agents(N).set_save_data(false).set_show_figure(false).build();
-
+% r = rb.set_number_of_agents(N).set_save_data(false).build();%r = rb.set_number_of_agents(N).set_save_data(false).set_show_figure(false).build();
+r = Robotarium('NumberOfRobots', N, 'ShowFigure', true);
 % Select the number of iterations for the experiment.  This value is
 % arbitrary
 
@@ -33,8 +33,8 @@ safety = 0.03;
 lambda = 0.03;
 unicycle_barrier_certificate = create_uni_barrier_certificate('SafetyRadius', safety, ... 
     'ProjectionDistance', lambda);
-in = 1;
 Ka = diag([6 6 6 6 5 5 6 6 6 6]);
+alpha = 0.1;
 % k1=10; k2=k1;k3=k1;k5=k1;k6=k1;
 C = diag([10 10 10 10 10]);
 tol = 1e-3;
@@ -42,7 +42,7 @@ eps = 1e-7;
 %d12 = 0.2351; d13=0.3804;d23=d12;d14=d13;d15=d12;d34=d12;d45=d12;
 s1=sin(2*pi/5);c1=cos(2*pi/5);s2=sin(4*pi/5);c2=cos(pi/5);
 
-a=0.1;
+a = 0.25;
 d12 = a*sqrt(2*(1-c1)); 
 d13 = d12*sqrt(2*(1-cos(3*pi/5)));
 d23 = d12;
@@ -156,7 +156,7 @@ for t = 1:iterations
     omega0 = 0.3;
     vd1 = [-radius*omega0*sin(omega0*T(t));radius*omega0*cos(omega0*T(t))];
     vd = kron(ones(N,1),vd1);
-    vddot = -0.05*sign(L*v_D + Aio.*(v_D - vd));
+    vddot = -alpha*sign(L*v_D + Aio.*(v_D - vd));
     
     V_hat_output(t,:) = v_D;
     V_tilde_output(t,:) = v_D - vd;
@@ -211,7 +211,7 @@ for t = 1:iterations
     theta_d_dot = zeros(N,1);
     for i = 1:N
         if norm(u(2*i-1:2*i)) > eps
-            theta_d_dot(i) = u(2*i-1:2*i)'*H*u_dot(2*i-1:2*i)/norm(u(2*i-1:2*i))^2;
+            theta_d_dot(i) = u(2*i-1:2*i)'*H'*u_dot(2*i-1:2*i)/norm(u(2*i-1:2*i))^2;
         end
     end
     
@@ -245,7 +245,7 @@ save('DATA_Flocking','E_output','Theta_tilde_output','V_output','Omega_output','
 
 % Though we didn't save any data, we still should call r.call_at_scripts_end() after our
 % experiment is over!
-r.call_at_scripts_end();
+r.debug();
 function [dv_hat] = VD_GENE(t,v_hat)
     Adj = [0 1 1 1 1;                   % n x n adjacency matrix for the graph
            1 0 1 0 0;                   % Adj(i,j) == 0, if ith agent and jth
@@ -258,8 +258,9 @@ function [dv_hat] = VD_GENE(t,v_hat)
     Aio = kron([1,0,0,0,0],[1,1])';
     radius = 0.15;
     omega0=0.3;
+    alpha = 0.1;
     vd1=[-radius*omega0*sin(omega0*t);
           radius*omega0*cos(omega0*t)];
     vd = kron(ones(5,1),vd1);
-    dv_hat = -0.05*sign(L*v_hat + Aio.*(v_hat - vd));
+    dv_hat = -alpha*sign(L*v_hat + Aio.*(v_hat - vd));
 end
