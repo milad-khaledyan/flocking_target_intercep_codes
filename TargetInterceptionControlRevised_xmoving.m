@@ -6,17 +6,16 @@
 % insert your own algorithm!  If you want to see some working code, check
 % out the 'examples' folder.
 T = 0:0.033:160;
-[t,vT_hat] = ode45(@VD_GENE, T, [zeros(10,1);0.1;0.1]);
+[~,vT_hat] = ode45(@VD_GENE, T, [zeros(10,1);0.1;0.1]);
 %% Get Robotarium object used to communicate with the robots/simulator
 % rb = RobotariumBuilder();
 
 % Get the number of available agents from the Robotarium.  We don't need a
 % specific value for this algorithm
-N = 7;%rb.get_available_agents();
+N = 7;
 
 % Set the number of agents and whether we would like to save data.  Then,
 % build the Robotarium simulator object!
-% r = rb.set_number_of_agents(N).set_save_data(false).build();%r = rb.set_number_of_agents(N).set_save_data(false).set_show_figure(false).build();
 r = Robotarium('NumberOfRobots', N, 'ShowFigure', true);
 % Select the number of iterations for the experiment.  This value is
 % arbitrary
@@ -69,8 +68,7 @@ d = d_u + d_u';
 
 q_star = [fradius -a*s1+fradius -a*s2+fradius a*s2+fradius a*s1+fradius;a a*c1 -a*c2 -a*c2 a*c1;pi/2*ones(1,5)];
 sigma = 0.5;
-% ini = q_star+sigma*(rand(3,5));
-%initial_conditions = [ini [sum(ini(1,:))/5;sum(ini(2,:))/5;sum(ini(3,:))/5] [radius;0;pi/2]];
+
 initial_conditions= 0.9*[0.2140   -0.3092    0.1907    0.6743    .6533    0.1646    0.4
     0.9995    0.4351   -0.3093    0.0863    0.5769    0.3377         0.3377
     0.8727    0.8727    0.8727    0.8727    0.8727    0.8727   0.8727]-[1.1*ones(1,7);0.4*ones(1,7);zeros(1,7)];
@@ -81,7 +79,7 @@ Adj = [0 1 0 0 1 1;                   % n x n adjacency matrix for the graph
        0 0 1 0 1 1;                   % 1 if ith and jth agent are connected
        1 0 0 1 0 0;
        1 1 1 1 0 0];                  % Change Adj if the connecting 
-                                    % topology needs to be changed
+                                      % topology needs to be changed
 
 
 args = {'PositionError', 0.01, 'RotationError', 0.01};
@@ -115,7 +113,6 @@ Y_output = zeros(iterations, N);
 U_output = zeros(iterations, 2*N);
 U_norm_output = zeros(iterations, N);
 
-%load 'Velocity_Estimation'
 for t = 1:iterations
     
     % Retrieve the most recent poses from the Robotarium.  The time delay is
@@ -258,18 +255,9 @@ for t = 1:iterations
         E_hat = [et1x(t);et1y(t);et2x(t);et2y(t);et3x(t);et3y(t);et4x(t);et4y(t);et5x(t);et5y(t);eT]; 
         dE_hat = -beta*sign(L*E_hat + Aio.*(E_hat - kron(ones(6,1),eT)));
     end
-    %%
-%     e_T1{t} = [et1x(t);et1y(t)]-eT;e_T2{t} = [et2x(t);et2y(t)]-eT;e_T3{t} = [et3x(t);et3y(t)]-eT;e_T4{t} = [et4x(t);et4y(t)]-eT;
-%     e_T5{t} = [et5x(t);et5y(t)]-eT;e_T6{t} = [et6x(t);et6y(t)]-eT;
-%     en1(t)=norm(e_T1{t});en2(t)=norm(e_T2{t});en3(t)=norm(e_T3{t});en4(t)=norm(e_T4{t});en5(t)=norm(e_T5{t});en6(t)=norm(e_T6{t});
-%     et(t) = norm(eT);
-    
+
     %% 
     u_a = -Ka*R0'*z;
-    %%v_D = v_hat(t,1:12)' + kron(ones(6,1),(kT)*eT);
-%     v_D = v_hat(t,1:12)' + Kt*E_hat;
-%     u = ua + v_D - diag([zeros(1,10) 1 1])*ua;
-%     u(11:12) = qT_dot+Kt*eT;
     u = u_a + vT_hat(t,:)' + Kt*E_hat;
     u(11:12) = vT1 + Kt*eT;
     
@@ -346,14 +334,13 @@ for t = 1:iterations
     V_output(t,:) = v';
     u_output = [v'; omega'];
     
-%     v_T(t) = norm([v_hat(t,11);v_hat(t,12)]);
     %% Leader
     u_leader = vT1 + Kt*(pT-p(:,N));
     theta_d_leader = 0;
     if norm(u_leader) > eps
         theta_d_leader = atan2(u_leader(2), u_leader(1));
     end
-%     theta_d_leader = atan2(radius*omega0*cos(omega0*T(t)),-radius*omega0*sin(omega0*T(t)));
+    
     theta_tilde_leader = theta(N)-theta_d_leader;
     B_leader = [(cos(theta_tilde_leader))^2 -(sin(2*theta_tilde_leader))/2; (sin(2*theta_tilde_leader))/2 (cos(theta_tilde_leader))^2];
     eT_leader_dot = vT1 - B_leader*u_leader;
@@ -362,19 +349,11 @@ for t = 1:iterations
     if norm(u_leader) > eps
         theta_d_leader_dot = u_leader'*H'*u_leader_dot/norm(u_leader)^2;
     end
-%     theta_d_leader_dot = omega0;
+
     w_leader = -c*theta_tilde_leader + theta_d_leader_dot;
-%     if w_leader >= 2*pi
-%             w_leader = 2*pi;
-%     elseif w_leader <= -2*pi
-%             w_leader = -2*pi;
-%     end
     u_leader = [radius;radius*omega0*cos(omega0*T(t))];
     v_leader = norm(u_leader)*cos(theta_tilde_leader);
-    dvT = [v_leader;w_leader];
-
-%     dvT = [-radius*omega0*sin(omega0*T(t))*cos(q(21))+radius*omega0*cos(omega0*T(t))*sin(q(21));wd];
-    
+    dvT = [v_leader;w_leader];    
 
     dq = [u_output dvT];
     U_output(t,:) = reshape(dq,1,[]);
@@ -392,9 +371,7 @@ end
 
 %Though we didn't save any data, we still should call r.call_at_scripts_end() after our
 %experiment is over!
-% 'et','en1','en2','en3','en4','en5','en6'
 save('DATA_Target_Interception_Local','E_output','Theta_tilde_output','V_output','Omega_output','V_hat_output','V_tilde_output','U_output','U_norm_output')
-% r.call_at_scripts_end();
 r.debug();
 function [vT_hat_dot] = VD_GENE(t,vT_hat)
     alpha = 0.1;

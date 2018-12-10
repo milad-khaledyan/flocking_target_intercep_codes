@@ -9,7 +9,7 @@
 %% Get Robotarium object used to communicate with the robots/simulator
 T = 0:.033:80;
 opts = odeset('RelTol',1e-6,'AbsTol',1e-6);
-[t,v_hat] = ode45(@VD_GENE, T, zeros(10,1), opts);
+[~,v_hat] = ode45(@VD_GENE, T, zeros(10,1), opts);
 
 % rb = RobotariumBuilder();
 
@@ -35,11 +35,11 @@ unicycle_barrier_certificate = create_uni_barrier_certificate('SafetyRadius', sa
     'ProjectionDistance', lambda);
 Ka = diag([6 6 6 6 5 5 6 6 6 6]);
 alpha = 0.1;
-% k1=10; k2=k1;k3=k1;k5=k1;k6=k1;
+
 C = diag([10 10 10 10 10]);
 tol = 1e-3;
 eps = 1e-7;
-%d12 = 0.2351; d13=0.3804;d23=d12;d14=d13;d15=d12;d34=d12;d45=d12;
+
 s1=sin(2*pi/5);c1=cos(2*pi/5);s2=sin(4*pi/5);c2=cos(pi/5);
 
 a = 0.25;
